@@ -2,76 +2,63 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Tales Runner - Circular Dash Update</title>
+    <title>Tales Runner - Hurdle Manual Control</title>
     <style>
         body { margin: 0; overflow: hidden; background: #a3d2ff; font-family: 'Malgun Gothic', sans-serif; }
         
-        /* [Lobby & UI] */
-        #lobby { position: absolute; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; color: white; }
-        #game-ui { position: absolute; width: 100%; height: 100%; display: none; pointer-events: none; }
+        /* Lobby */
+        #lobby { position: absolute; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; color: white; }
+        #nick-input { padding: 12px; border-radius: 20px; border: none; text-align: center; margin-bottom: 20px; width: 200px; }
 
+        /* Game UI */
+        #game-ui { position: absolute; width: 100%; height: 100%; display: none; pointer-events: none; }
+        
         /* 원형 대쉬 게이지 */
-        #dash-wrapper {
-            position: absolute; left: 40px; bottom: 40px; width: 100px; height: 100px;
-        }
+        #dash-wrapper { position: absolute; left: 40px; bottom: 40px; width: 100px; height: 100px; }
         .circular-progress {
             width: 100px; height: 100px; border-radius: 50%;
-            background: conic-gradient(#444 0deg, #444 360deg); /* 배경 */
-            display: flex; align-items: center; justify-content: center;
-            position: relative;
+            background: conic-gradient(#444 0deg, #444 360deg);
+            display: flex; align-items: center; justify-content: center; position: relative;
         }
-        .circular-progress::before {
-            content: ""; position: absolute; width: 75px; height: 75px;
-            background: rgba(0,0,0,0.6); border-radius: 50%; /* 가운데 구멍 */
-        }
-        #dash-value {
-            position: relative; color: white; font-weight: bold; font-size: 18px; z-index: 10;
-        }
+        .circular-progress::before { content: ""; position: absolute; width: 75px; height: 75px; background: rgba(0,0,0,0.8); border-radius: 50%; }
+        #dash-value { position: relative; color: white; font-weight: bold; font-size: 18px; z-index: 10; }
 
         /* 하단 진행도 */
         #progress-container { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 60%; height: 10px; background: rgba(0,0,0,0.5); border-radius: 5px; border: 2px solid white; }
         #progress-icon { position: absolute; top: -15px; width: 30px; height: 30px; background: #ff4444; border-radius: 50%; border: 2px solid white; left: 0%; margin-left: -15px; }
 
-        #result-screen { position: absolute; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 200; color: white; }
+        #result-screen { position: absolute; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 200; color: white; }
     </style>
 </head>
 <body>
 
     <div id="lobby">
         <h1>TALES RUNNER</h1>
-        <input type="text" id="nick-input" placeholder="닉네임" maxlength="8" style="padding:10px; border-radius:20px; border:none; text-align:center;">
-        <button onclick="tryStart()" style="margin-top:20px; padding:10px 40px; cursor:pointer; border-radius:20px; border:none; background:#ffcc00; font-weight:bold;">START</button>
+        <p>방향키: 이동 | Z: 대쉬 | Ctrl: 점프</p>
+        <input type="text" id="nick-input" placeholder="닉네임" maxlength="8">
+        <button onclick="tryStart()" style="padding:10px 30px; cursor:pointer; background:#ffcc00; border:none; border-radius:20px; font-weight:bold;">게임 시작</button>
     </div>
 
     <div id="game-ui">
         <div id="dash-wrapper">
-            <div class="circular-progress" id="dash-circle">
-                <div id="dash-value">15</div>
-            </div>
-            <div style="color:white; text-align:center; font-size:12px; margin-top:5px; text-shadow:1px 1px 2px #000;">DASH (Z)</div>
+            <div class="circular-progress" id="dash-circle"><div id="dash-value">15</div></div>
         </div>
-
-        <div id="progress-container">
-            <div id="progress-icon"></div>
-        </div>
+        <div id="progress-container"><div id="progress-icon"></div></div>
     </div>
 
     <div id="result-screen">
         <h2 id="res-nick"></h2>
-        <button onclick="location.reload()">RESTART</button>
+        <p>기록: <span id="res-time"></span>초</p>
+        <button onclick="location.reload()" style="padding:10px 20px; cursor:pointer;">다시 하기</button>
     </div>
 
     <script type="module">
         import * as THREE from 'https://cdn.skypack.dev/three@0.136.0';
 
         let gameStarted = false, gameFinished = false;
-        let totalDist = 1500, currentDist = 0;
-        
-        // --- 대쉬 시스템 설정 ---
-        let dashMax = 15;
-        let dashCurrent = 15;
-        const dashDepleteRate = 15 / 13; // 13초 동안 15 소모
-        const dashRecoverRate = 1;     // 초당 1 회복
+        let totalDist = 2000, currentDist = 0;
+        let dashMax = 15, dashCurrent = 15;
+        let startTime, nickname = "";
 
         const scene = new THREE.Scene();
         scene.fog = new THREE.Fog(0xa3d2ff, 20, 150);
@@ -80,18 +67,27 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // 조명 및 배경
-        const sun = new THREE.DirectionalLight(0xffffff, 1);
+        const sun = new THREE.DirectionalLight(0xffffff, 1.2);
         sun.position.set(5, 20, 10);
         scene.add(sun);
-        scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 
-        const trackGeo = new THREE.PlaneGeometry(15, 200);
+        // 맵 (허들 트랙)
+        const trackGeo = new THREE.PlaneGeometry(15, 3000); // 아주 긴 트랙
         const trackMat = new THREE.MeshPhongMaterial({ color: 0x5cace2 });
-        const tracks = [new THREE.Mesh(trackGeo, trackMat), new THREE.Mesh(trackGeo, trackMat)];
-        tracks[0].rotation.x = tracks[1].rotation.x = -Math.PI/2;
-        tracks[1].position.z = -200;
-        tracks.forEach(t => scene.add(t));
+        const track = new THREE.Mesh(trackGeo, trackMat);
+        track.rotation.x = -Math.PI / 2;
+        track.position.z = -1500;
+        scene.add(track);
+
+        // 허들 장애물 미리 생성 (허들 노멀맵 스타일)
+        const hurdles = [];
+        for(let i = 1; i <= 20; i++) {
+            const h = new THREE.Mesh(new THREE.BoxGeometry(15, 1, 0.5), new THREE.MeshPhongMaterial({color: 0xffffff}));
+            h.position.set(0, 0.5, -i * 100); // 100m 간격으로 배치
+            scene.add(h);
+            hurdles.push(h);
+        }
 
         const player = new THREE.Group();
         const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.5, 0.8), new THREE.MeshPhongMaterial({ color: 0xffffff }));
@@ -99,30 +95,31 @@
         player.add(body);
         scene.add(player);
 
-        let keys = {}, speed = 0, lastTime = Date.now();
+        let keys = {}, speed = 0, jumpV = 0, isJumping = false, lastTime = Date.now();
 
         window.tryStart = () => {
+            nickname = document.getElementById('nick-input').value || "런너";
             document.getElementById('lobby').style.display = 'none';
             document.getElementById('game-ui').style.display = 'block';
-            gameStarted = true; lastTime = Date.now();
+            gameStarted = true; startTime = Date.now(); lastTime = Date.now();
         };
 
-        window.onkeydown = e => keys[e.code] = true;
+        window.onkeydown = e => { keys[e.code] = true; if(e.code === 'ControlLeft') e.preventDefault(); };
         window.onkeyup = e => keys[e.code] = false;
 
-        function updateDashUI() {
+        function updateDashUI(dt) {
+            let isDashing = keys['KeyZ'] && dashCurrent > 0 && keys['ArrowUp'];
+            if(isDashing) dashCurrent = Math.max(0, dashCurrent - (15/13 * dt));
+            else dashCurrent = Math.min(dashMax, dashCurrent + (1 * dt));
+
             const circle = document.getElementById('dash-circle');
-            const valueTxt = document.getElementById('dash-value');
-            const percentage = (dashCurrent / dashMax) * 100;
-            const degrees = (dashCurrent / dashMax) * 360;
-
-            // 색상 계산 (낮으면 빨강(0), 높으면 파랑(240))
-            const hue = (dashCurrent / dashMax) * 200; // 0 to 200 (Red to Light Blue)
+            const deg = (dashCurrent / dashMax) * 360;
+            const hue = (dashCurrent / dashMax) * 200;
             const color = `hsl(${hue}, 80%, 50%)`;
-
-            circle.style.background = `conic-gradient(${color} ${degrees}deg, #444 ${degrees}deg)`;
-            valueTxt.innerText = Math.ceil(dashCurrent);
-            valueTxt.style.color = color;
+            circle.style.background = `conic-gradient(${color} ${deg}deg, #444 ${deg}deg)`;
+            document.getElementById('dash-value').innerText = Math.ceil(dashCurrent);
+            document.getElementById('dash-value').style.color = color;
+            return isDashing;
         }
 
         function animate() {
@@ -130,45 +127,54 @@
             if(!gameStarted || gameFinished) { renderer.render(scene, camera); return; }
 
             const now = Date.now();
-            const deltaTime = (now - lastTime) / 1000;
+            const dt = (now - lastTime) / 1000;
             lastTime = now;
 
-            // 1. 대쉬 로직 적용
-            let isDashing = keys['KeyZ'] && dashCurrent > 0;
-            if (isDashing) {
-                dashCurrent = Math.max(0, dashCurrent - (dashDepleteRate * deltaTime));
-            } else {
-                dashCurrent = Math.min(dashMax, dashCurrent + (dashRecoverRate * deltaTime));
+            const isDashing = updateDashUI(dt);
+
+            // 1. 전진 로직 (방향키 위를 눌러야 속도가 붙음)
+            let targetSpeed = 0;
+            if(keys['ArrowUp']) targetSpeed = isDashing ? 1.8 : 0.9;
+            speed += (targetSpeed - speed) * 0.05; // 부드러운 가속
+
+            // 2. 좌우 이동 및 점프 (Ctrl)
+            if(keys['ArrowLeft'] && player.position.x > -6) player.position.x -= 0.15;
+            if(keys['ArrowRight'] && player.position.x < 6) player.position.x += 0.15;
+            if((keys['ControlLeft'] || keys['ControlRight']) && !isJumping) { isJumping = true; jumpV = 0.38; }
+
+            if(isJumping) {
+                player.position.y += jumpV; jumpV -= 0.02;
+                if(player.position.y <= 0) { player.position.y = 0; isJumping = false; }
             }
-            updateDashUI();
 
-            // 2. 속도 및 이동
-            let targetSpeed = isDashing ? 1.8 : 0.9;
-            speed += (targetSpeed - speed) * 0.1;
+            // 3. 월드 이동 (실제 캐릭터 위치 이동)
+            player.position.z -= speed;
+            currentDist = Math.abs(player.position.z);
 
-            if(keys['ArrowLeft'] && player.position.x > -6) player.position.x -= 0.2;
-            if(keys['ArrowRight'] && player.position.x < 6) player.position.x += 0.2;
-
-            // 3. 카메라 틸트 및 시점 (이전 동일)
+            // 4. 카메라 팔로우
             camera.fov += ((isDashing ? 75 : 60) - camera.fov) * 0.1;
             camera.updateProjectionMatrix();
-            camera.position.lerp(new THREE.Vector3(player.position.x * 0.4, player.position.y + 4, 10), 0.1);
+            camera.position.set(player.position.x * 0.5, player.position.y + 4, player.position.z + 10);
             camera.lookAt(player.position.x, player.position.y + 1, player.position.z - 10);
 
-            // 4. 진행도 업데이트
-            currentDist += speed;
+            // 5. 진행도 & 충돌 체크
             document.getElementById('progress-icon').style.left = Math.min(100, (currentDist / totalDist) * 100) + "%";
+            
+            hurdles.forEach(h => {
+                if(player.position.distanceTo(h.position) < 1.2 && player.position.y < 1.0) {
+                    speed *= 0.5; // 장애물 부딪히면 속도 반토막
+                }
+            });
 
             if(currentDist >= totalDist) {
                 gameFinished = true;
                 document.getElementById('result-screen').style.display = 'flex';
-                document.getElementById('res-nick').innerText = (document.getElementById('nick-input').value || "런너") + "님 완주!";
+                document.getElementById('res-nick').innerText = nickname + "님 완주!";
+                document.getElementById('res-time').innerText = ((Date.now() - startTime)/1000).toFixed(2);
             }
 
-            tracks.forEach(t => { t.position.z += speed; if(t.position.z > 100) t.position.z -= 200; });
             renderer.render(scene, camera);
         }
-
         animate();
     </script>
 </body>
