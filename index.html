@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Tales2 Runner</title>
+    <title>Tales Runner - Patch Notes Box</title>
     
     <link rel="icon" href="favicon.png"> 
 
@@ -59,27 +59,26 @@
     <div id="lobby">
         <h1 style="color: #ffcc00; font-size: 45px; letter-spacing: 5px; margin-bottom: 30px;">TALES RUNNER</h1>
         <input type="text" id="nick-input" placeholder="닉네임" maxlength="8">
-        
-        <div class="map-card" id="map-card-btn">
+        <div class="map-card" onclick="tryStartGame()">
             <div class="map-img">HURDLE (NORMAL)</div>
             <div style="padding: 20px; text-align: center; color: #eee;">
-                <b style="font-size: 20px;">허들 노멀</b><br><br>
-                <span style="color: #888; font-size: 14px;">장애물을 피해 골인하세요</span>
+                <b style="font-size: 20px;">허들 노멀</b><br>
+                <span style="color: #888; font-size: 14px;">장애물을 피해 골인하세요!</span>
             </div>
         </div>
 
         <div id="patch-notes-box">
             <span class="version-title">0.0.5 ver</span>
-            <span class="patch-item">인게임 내 로비로 나가는 'EXIT' 버튼을 추가했습니다.</span><br>
+            <span class="patch-item">인게임 내 로비로 나가는 'EXIT' 버튼을 추가했습니다.</span>
 
             <span class="version-title">0.0.4 ver</span>
-            <span class="patch-item">대쉬 게이지 원형 UI 변경 및 방향키 버그를 수정하였습니다.</span><br>
+            <span class="patch-item">대쉬 게이지 원형 UI 변경 및 방향키 버그를 수정하였습니다.</span>
 
             <span class="version-title">0.0.3 ver</span>
-            <span class="patch-item">방향키 이동 로직 및 패널 레이아웃을 최적화하였습니다.</span><br>
+            <span class="patch-item">방향키 이동 로직 및 패널 레이아웃을 최적화하였습니다.</span>
 
             <span class="version-title">0.0.2 ver</span>
-            <span class="patch-item">대쉬칸과 타이머의 UI를 일부 수정하였습니다.</span><br>
+            <span class="patch-item">대쉬칸과 타이머의 UI를 일부 수정하였습니다.</span>
 
             <span class="version-title">0.0.1 ver</span>
             <span class="patch-item">대기창의 기본 UI 구성을 완료하였습니다.</span>
@@ -106,6 +105,7 @@
     </div>
 
     <script type="module">
+        /* 스크립트 부분은 이전 답변과 동일하게 유지 */
         import * as THREE from 'https://cdn.skypack.dev/three@0.136.0';
         let gameStarted = false, gameFinished = false, isStunned = false;
         let dashMax = 15, dashCurrent = 15;
@@ -150,23 +150,12 @@
         pBody.position.y = 0.8; player.add(pBody); scene.add(player);
         let keys = {}, speed = 0, jumpV = 0, isJumping = false, jumpCount = 0;
         let jumpSpeedBase = 0, currentLaneOffset = 0, lastTime = Date.now();
-
-        // [고침] tryStartGame 함수를 외부에서도 쓸 수 있게 명확히 정의
         window.tryStartGame = () => {
             nickname = document.getElementById('nick-input').value || "런너";
             document.getElementById('lobby').style.display = 'none';
             document.getElementById('game-ui').style.display = 'block';
-            gameStarted = true; 
-            gameFinished = false; // 재시작을 위해 초기화 추가
-            startTime = Date.now(); 
-            lastTime = Date.now();
+            gameStarted = true; startTime = Date.now(); lastTime = Date.now();
         };
-
-        // [고침] 클릭 이벤트 리스너 직접 연결
-        document.getElementById('map-card-btn').addEventListener('click', () => {
-            window.tryStartGame();
-        });
-
         window.backToLobby = () => {
             gameStarted = false; gameFinished = false; playerAngle = 0; currentLaneOffset = 0;
             speed = 0; dashCurrent = dashMax;
