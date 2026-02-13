@@ -3,69 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <title>Tales2 Runner</title>
-    <link rel="icon" href="favicon.png"> 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Malgun Gothic', sans-serif; }
-        #lobby { position: absolute; width: 100%; height: 100%; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; padding: 20px 0; }
+        #lobby { position: absolute; width: 100%; height: 100%; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
         #nick-input { padding: 15px; border-radius: 5px; border: 2px solid #333; width: 260px; text-align: center; margin-bottom: 25px; background: #111; color: white; font-size: 18px; outline: none; }
-        
-        /* 맵 카드 스타일 */
-        .map-card { width: 300px; background: #1a1a1a; border-radius: 15px; border: 2px solid #333; cursor: pointer; transition: 0.3s; overflow: hidden; margin-bottom: 30px; }
+        .map-card { width: 300px; background: #1a1a1a; border-radius: 15px; border: 2px solid #333; cursor: pointer; transition: 0.3s; overflow: hidden; }
         .map-card:hover { border-color: #ffcc00; transform: translateY(-5px); }
         .map-img { width: 100%; height: 160px; background: linear-gradient(45deg, #444, #111); display: flex; align-items: center; justify-content: center; color: #ffcc00; font-weight: bold; font-size: 22px; }
         
-        /* 패치노트 박스 */
-        #patch-notes-box { 
-            width: 550px; height: 160px; background: rgba(255, 255, 255, 0.05); 
-            border: 1px solid #333; border-radius: 10px; padding: 15px 25px; 
-            overflow-y: auto; color: #aaa; font-size: 13px; line-height: 1.8; text-align: left; 
-        }
-        #patch-notes-box::-webkit-scrollbar { width: 6px; }
-        #patch-notes-box::-webkit-scrollbar-thumb { background: #444; border-radius: 10px; }
-        .version-title { color: #ffcc00; font-weight: bold; margin-top: 12px; display: block; font-size: 14px; border-bottom: 1px solid #222; padding-bottom: 3px; margin-bottom: 5px; }
-        .patch-item { display: block; padding-left: 10px; position: relative; }
-        .patch-item::before { content: "- "; position: absolute; left: 0; }
-
-        /* 인게임 UI */
         #game-ui { position: absolute; width: 100%; height: 100%; display: none; pointer-events: none; }
         #top-left-ui { position: absolute; top: 30px; left: 30px; display: flex; align-items: center; gap: 20px; }
-        #exit-btn { position: absolute; top: 30px; right: 30px; padding: 10px 25px; background: #ffcc00; color: #000; font-weight: bold; border-radius: 5px; cursor: pointer; pointer-events: auto; border: none; transition: 0.2s; }
+        #exit-btn { position: absolute; top: 30px; right: 30px; padding: 10px 25px; background: #ffcc00; color: #000; font-weight: bold; border-radius: 5px; cursor: pointer; pointer-events: auto; border: none; }
         #dash-circle-container { position: relative; width: 80px; height: 80px; border-radius: 50%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
-        #dash-gauge { width: 100%; height: 100%; border-radius: 50%; background: conic-gradient(#00aaff 0%, #00aaff 100%, #222 100%); -webkit-mask: radial-gradient(transparent 60%, black 61%); mask: radial-gradient(transparent 60%, black 61%); transition: background 0.1s; }
+        #dash-gauge { width: 100%; height: 100%; border-radius: 50%; background: conic-gradient(#00aaff 0%, #00aaff 100%, #222 100%); -webkit-mask: radial-gradient(transparent 60%, black 61%); mask: radial-gradient(transparent 60%, black 61%); }
         #timer { color: #fff; font-size: 32px; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); }
         #progress-container { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 60%; height: 8px; background: rgba(255,255,255,0.2); border-radius: 5px; }
         #progress-icon { position: absolute; top: -14px; width: 35px; height: 35px; background: #ff4444; border-radius: 50%; border: 3px solid white; left: 0%; margin-left: -17px; }
-        
         #result-screen { position: absolute; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 200; color: white; }
     </style>
 </head>
 <body>
 
     <div id="lobby">
-        <h1 style="color: #ffcc00; font-size: 45px; letter-spacing: 5px; margin-bottom: 30px;">TALES RUNNER</h1>
-        <input type="text" id="nick-input" placeholder="닉네임 (안 써도 입장 가능)" maxlength="8">
-        
-        <div class="map-card" onclick="window.tryStartGame()">
+        <h1 style="color: #ffcc00; font-size: 45px; margin-bottom: 30px;">TALES RUNNER</h1>
+        <input type="text" id="nick-input" placeholder="닉네임 입력 (미입력시 런너)">
+        <div class="map-card" onclick="startGame()">
             <div class="map-img">HURDLE (NORMAL)</div>
             <div style="padding: 20px; text-align: center; color: #eee;">
                 <b style="font-size: 20px;">허들 노멀</b><br>
-                <span style="color: #888; font-size: 14px;">장애물을 피해 골인하세요!</span>
+                <span style="color: #888; font-size: 14px;">클릭하면 바로 시작됩니다!</span>
             </div>
-        </div>
-
-        <div id="patch-notes-box">
-            <span class="version-title">0.0.5.1 ver</span>
-            <span class="patch-item">대기맵 클릭 시 게임이 실행되지 않는 버그를 수정하였습니다..</span>
-            <span class="version-title">0.0.5 ver</span>
-            <span class="patch-item">인게임 내 로비로 나가는 버튼을 추가하였습니다.</span>
-            <span class="version-title">0.0.4 ver</span>
-            <span class="patch-item">대쉬 게이지 원형 UI 변경 및 방향키 버그를 수정하였습니다.</span>
-            <span class="version-title">0.0.3 ver</span>
-            <span class="patch-item">방향키 이동 로직 및 패널 레이아웃을 최적화하였습니다.</span>
-            <span class="version-title">0.0.2 ver</span>
-            <span class="patch-item">대쉬칸과 타이머의 UI를 일부 수정하였습니다.</span>
-            <span class="version-title">0.0.1 ver</span>
-            <span class="patch-item">대기창의 기본 UI 구성을 완료하였습니다.</span>
         </div>
     </div>
 
@@ -73,176 +41,169 @@
         <div id="top-left-ui">
             <div id="dash-circle-container">
                 <div id="dash-gauge"></div>
-                <div id="dash-text-center" style="position:absolute; color:white; font-size:12px; font-weight:bold;">DASH</div>
+                <div style="position:absolute; color:white; font-size:12px; font-weight:bold;">DASH</div>
             </div>
             <div id="timer">00:00</div>
         </div>
-        <button id="exit-btn" onclick="window.backToLobby()">EXIT</button>
+        <button id="exit-btn" onclick="location.reload()">EXIT</button>
         <div id="progress-container"><div id="progress-icon"></div></div>
     </div>
 
     <div id="result-screen">
         <h1 style="font-size: 60px; color: #ffcc00;">GOAL!</h1>
-        <h2 id="res-nick" style="font-size: 30px;"></h2>
+        <h2 id="res-nick"></h2>
         <p style="font-size: 24px;">기록: <span id="res-time"></span></p>
-        <button onclick="location.reload()" style="padding: 15px 40px; cursor:pointer; background:#ffcc00; border:none; font-weight:bold; border-radius:5px;">확인</button>
+        <button onclick="location.reload()" style="padding: 15px 40px; cursor:pointer; background:#ffcc00; border:none; font-weight:bold;">확인</button>
     </div>
 
-    <script type="module">
-        import * as THREE from 'https://cdn.skypack.dev/three@0.136.0';
-        
+    <script>
+        // 전역 변수 (어제 쓰던 그대로)
         let gameStarted = false, gameFinished = false, isStunned = false;
         let dashMax = 15, dashCurrent = 15;
         let startTime = 0, lastTime = Date.now(), nickname = "";
         const radius = 400, trackWidth = 16;
-        let playerAngle = 0; 
-        let keys = {}, speed = 0, jumpV = 0, isJumping = false, jumpCount = 0;
+        let playerAngle = 0, speed = 0, jumpV = 0, isJumping = false, jumpCount = 0;
         let jumpSpeedBase = 0, currentLaneOffset = 0;
+        let keys = {};
+        let scene, camera, renderer, player, pBody, hurdles = [];
 
-        // [입장 로직 개선] 닉네임 없어도 무조건 입장
-        window.tryStartGame = function() {
-            const inputVal = document.getElementById('nick-input').value;
-            nickname = inputVal.trim() === "" ? "런너" : inputVal; // 비어있으면 "런너"로 대체
-            
+        // 시작 함수
+        function startGame() {
+            const val = document.getElementById('nick-input').value;
+            nickname = val.trim() === "" ? "런너" : val;
             document.getElementById('lobby').style.display = 'none';
             document.getElementById('game-ui').style.display = 'block';
             
+            init(); // 3D 월드 생성
             gameStarted = true;
-            gameFinished = false;
-            playerAngle = 0;
-            speed = 0;
-            currentLaneOffset = 0;
-            startTime = Date.now(); 
+            startTime = Date.now();
             lastTime = Date.now();
-        };
-
-        window.backToLobby = function() {
-            gameStarted = false;
-            document.getElementById('lobby').style.display = 'flex';
-            document.getElementById('game-ui').style.display = 'none';
-            document.getElementById('result-screen').style.display = 'none';
-        };
-
-        // --- 인게임 물리 렌더링 ---
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87ceeb);
-        scene.fog = new THREE.Fog(0x87ceeb, 40, 300);
-        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 2000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
-
-        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-        const sun = new THREE.DirectionalLight(0xffffff, 1.0);
-        sun.position.set(50, 100, 50); scene.add(sun);
-
-        const hurdles = [];
-        const floorGeo = new THREE.RingGeometry(radius - 80, radius + 80, 128);
-        const floorMat = new THREE.MeshPhongMaterial({ color: 0x90ee90, side: THREE.DoubleSide });
-        const floor = new THREE.Mesh(floorGeo, floorMat);
-        floor.rotation.x = -Math.PI/2; scene.add(floor);
-
-        const trackGeo = new THREE.RingGeometry(radius - trackWidth/2, radius + trackWidth/2, 128);
-        const trackMat = new THREE.MeshPhongMaterial({ color: 0x4a90e2, side: THREE.DoubleSide });
-        const track = new THREE.Mesh(trackGeo, trackMat);
-        track.rotation.x = -Math.PI/2; track.position.y = 0.05; scene.add(track);
-
-        for(let i = 1; i <= 50; i++) {
-            const hAngle = -(i / 55) * Math.PI * 2; 
-            const h = new THREE.Group();
-            const bar = new THREE.Mesh(new THREE.BoxGeometry(trackWidth, 1.2, 0.4), new THREE.MeshPhongMaterial({color: 0xffffff}));
-            h.add(bar);
-            h.position.set(Math.cos(hAngle) * radius, 0.6, Math.sin(hAngle) * radius);
-            h.rotation.y = -hAngle;
-            h.userData = { isDown: false, originalY: 0.6 };
-            scene.add(h); hurdles.push(h);
+            animate();
         }
 
-        const player = new THREE.Group();
-        const pBody = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.6, 0.8), new THREE.MeshPhongMaterial({ color: 0xffffff }));
-        pBody.position.y = 0.8; player.add(pBody); scene.add(player);
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87ceeb);
+            scene.fog = new THREE.Fog(0x87ceeb, 40, 300);
 
-        window.addEventListener('keydown', e => { keys[e.code] = true; });
-        window.addEventListener('keyup', e => { keys[e.code] = false; });
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 2000);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
 
-        window.addEventListener('keydown', e => {
+            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+            const sun = new THREE.DirectionalLight(0xffffff, 1.0);
+            sun.position.set(50, 100, 50); scene.add(sun);
+
+            // 월드 구축
+            const floorGeo = new THREE.RingGeometry(radius - 80, radius + 80, 128);
+            const floorMat = new THREE.MeshPhongMaterial({ color: 0x90ee90, side: THREE.DoubleSide });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI/2; scene.add(floor);
+
+            const trackGeo = new THREE.RingGeometry(radius - trackWidth/2, radius + trackWidth/2, 128);
+            const trackMat = new THREE.MeshPhongMaterial({ color: 0x4a90e2, side: THREE.DoubleSide });
+            const track = new THREE.Mesh(trackGeo, trackMat);
+            track.rotation.x = -Math.PI/2; track.position.y = 0.05; scene.add(track);
+
+            for(let i = 1; i <= 50; i++) {
+                const hAngle = -(i / 55) * Math.PI * 2; 
+                const h = new THREE.Group();
+                const bar = new THREE.Mesh(new THREE.BoxGeometry(trackWidth, 1.2, 0.4), new THREE.MeshPhongMaterial({color: 0xffffff}));
+                h.add(bar);
+                h.position.set(Math.cos(hAngle) * radius, 0.6, Math.sin(hAngle) * radius);
+                h.rotation.y = -hAngle;
+                h.userData = { isDown: false, originalY: 0.6 };
+                scene.add(h); hurdles.push(h);
+            }
+
+            player = new THREE.Group();
+            pBody = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.6, 0.8), new THREE.MeshPhongMaterial({ color: 0xffffff }));
+            pBody.position.y = 0.8; player.add(pBody); scene.add(player);
+        }
+
+        window.addEventListener('keydown', e => { 
+            keys[e.code] = true; 
             if((e.code === 'ControlLeft' || e.code === 'ControlRight') && gameStarted && !gameFinished && !isStunned) {
                 if(!isJumping) { isJumping = true; jumpCount = 1; jumpV = 0.45; jumpSpeedBase = speed; }
                 else if(jumpCount === 1) { jumpCount = 2; jumpV = 0.35; jumpSpeedBase = speed; }
             }
         });
+        window.addEventListener('keyup', e => { keys[e.code] = false; });
 
         function animate() {
             requestAnimationFrame(animate);
-            if(!gameStarted) { renderer.render(scene, camera); return; }
+            if(!gameStarted || gameFinished) {
+                if(gameFinished) renderer.render(scene, camera);
+                return;
+            }
 
             const now = Date.now();
             const dt = (now - lastTime) / 1000;
             lastTime = now;
 
-            if(!gameFinished) {
-                const elapsed = now - startTime;
-                const m = Math.floor(elapsed / 60000).toString().padStart(2, '0');
-                const s = Math.floor((elapsed % 60000) / 1000).toString().padStart(2, '0');
-                document.getElementById('timer').innerText = `${m}:${s}`;
+            const elapsed = now - startTime;
+            const m = Math.floor(elapsed / 60000).toString().padStart(2, '0');
+            const s = Math.floor((elapsed % 60000) / 1000).toString().padStart(2, '0');
+            document.getElementById('timer').innerText = `${m}:${s}`;
 
-                let isDashing = keys['KeyZ'] && dashCurrent > 0 && keys['ArrowUp'] && !isStunned;
-                if(isDashing) dashCurrent = Math.max(0, dashCurrent - (2.5 * dt)); 
-                else dashCurrent = Math.min(dashMax, dashCurrent + (1.2 * dt));
-                
-                const dPct = (dashCurrent / dashMax) * 100;
-                document.getElementById('dash-gauge').style.background = `conic-gradient(#00aaff 0%, #00aaff ${dPct}%, #222 ${dPct}%)`;
-                
-                if(!isStunned) {
-                    if(isJumping) {
-                        speed = jumpSpeedBase;
-                        player.position.y += jumpV; jumpV -= 0.018; 
-                        pBody.rotation.x += 0.25;
-                        if(player.position.y <= 0) { player.position.y = 0; isJumping = false; jumpCount = 0; pBody.rotation.x = 0; }
-                    } else {
-                        let tSpd = 0;
-                        if(keys['ArrowUp']) tSpd = isDashing ? 3.0 : 1.5;
-                        else if(keys['ArrowDown']) tSpd = -0.8;
-                        speed += (tSpd - speed) * 0.1;
-                    }
-                    if(keys['ArrowLeft'] && currentLaneOffset > -7.5) currentLaneOffset -= 0.25;
-                    if(keys['ArrowRight'] && currentLaneOffset < 7.5) currentLaneOffset += 0.25;
-                } else { speed += (0 - speed) * 0.05; }
-
-                playerAngle -= speed * 0.0007; 
-                const fR = radius + currentLaneOffset;
-                player.position.set(Math.cos(playerAngle)*fR, player.position.y, Math.sin(playerAngle)*fR);
-                player.rotation.y = -playerAngle - Math.PI/2;
-                
-                document.getElementById('progress-icon').style.left = Math.min(100, (Math.abs(playerAngle) / (Math.PI*2)) * 100) + "%";
-
-                const camAngle = playerAngle + 0.035; 
-                camera.position.set(Math.cos(camAngle)*fR, player.position.y + 3.0, Math.sin(camAngle)*fR);
-                camera.lookAt(player.position.x, player.position.y + 1.2, player.position.z);
-
-                hurdles.forEach(h => {
-                    if(!h.userData.isDown && player.position.distanceTo(h.position) < 2.0 && player.position.y < 1.4) {
-                        h.userData.isDown = true; h.rotation.x = Math.PI / 2.2; h.position.y = 0.1;
-                        isStunned = true; pBody.rotation.z = Math.PI / 2.5; speed = -0.3;
-                        setTimeout(() => { isStunned = false; pBody.rotation.z = 0; h.userData.isDown = false; h.rotation.x = 0; h.position.y = 0.6; }, 1000);
-                    }
-                });
-
-                if(Math.abs(playerAngle) >= Math.PI * 2) {
-                    gameFinished = true;
-                    document.getElementById('result-screen').style.display = 'flex';
-                    document.getElementById('res-nick').innerText = nickname + " 런너";
-                    document.getElementById('res-time').innerText = document.getElementById('timer').innerText;
+            let isDashing = keys['KeyZ'] && dashCurrent > 0 && keys['ArrowUp'] && !isStunned;
+            if(isDashing) dashCurrent = Math.max(0, dashCurrent - (2.5 * dt)); 
+            else dashCurrent = Math.min(dashMax, dashCurrent + (1.2 * dt));
+            
+            const dPct = (dashCurrent / dashMax) * 100;
+            document.getElementById('dash-gauge').style.background = `conic-gradient(#00aaff 0%, #00aaff ${dPct}%, #222 ${dPct}%)`;
+            
+            if(!isStunned) {
+                if(isJumping) {
+                    speed = jumpSpeedBase;
+                    player.position.y += jumpV; jumpV -= 0.018; 
+                    pBody.rotation.x += 0.25;
+                    if(player.position.y <= 0) { player.position.y = 0; isJumping = false; jumpCount = 0; pBody.rotation.x = 0; }
+                } else {
+                    let tSpd = 0;
+                    if(keys['ArrowUp']) tSpd = isDashing ? 3.0 : 1.5;
+                    else if(keys['ArrowDown']) tSpd = -0.8;
+                    speed += (tSpd - speed) * 0.1;
                 }
+                if(keys['ArrowLeft'] && currentLaneOffset > -7.5) currentLaneOffset -= 0.25;
+                if(keys['ArrowRight'] && currentLaneOffset < 7.5) currentLaneOffset += 0.25;
+            } else { speed += (0 - speed) * 0.05; }
+
+            playerAngle -= speed * 0.0007; 
+            const fR = radius + currentLaneOffset;
+            player.position.set(Math.cos(playerAngle)*fR, player.position.y, Math.sin(playerAngle)*fR);
+            player.rotation.y = -playerAngle - Math.PI/2;
+            
+            document.getElementById('progress-icon').style.left = Math.min(100, (Math.abs(playerAngle) / (Math.PI*2)) * 100) + "%";
+
+            const camAngle = playerAngle + 0.035; 
+            camera.position.set(Math.cos(camAngle)*fR, player.position.y + 3.0, Math.sin(camAngle)*fR);
+            camera.lookAt(player.position.x, player.position.y + 1.2, player.position.z);
+
+            hurdles.forEach(h => {
+                if(!h.userData.isDown && player.position.distanceTo(h.position) < 2.0 && player.position.y < 1.4) {
+                    h.userData.isDown = true; h.rotation.x = Math.PI / 2.2; h.position.y = 0.1;
+                    isStunned = true; pBody.rotation.z = Math.PI / 2.5; speed = -0.3;
+                    setTimeout(() => { isStunned = false; pBody.rotation.z = 0; h.userData.isDown = false; h.rotation.x = 0; h.position.y = 0.6; }, 1000);
+                }
+            });
+
+            if(Math.abs(playerAngle) >= Math.PI * 2) {
+                gameFinished = true;
+                document.getElementById('result-screen').style.display = 'flex';
+                document.getElementById('res-nick').innerText = nickname + " 런너";
+                document.getElementById('res-time').innerText = document.getElementById('timer').innerText;
             }
             renderer.render(scene, camera);
         }
-        animate();
 
         window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            if(camera) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
         });
     </script>
 </body>
